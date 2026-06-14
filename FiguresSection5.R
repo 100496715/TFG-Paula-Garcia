@@ -147,22 +147,38 @@ plot(kern.den.circ(acostarse_circ, bw="CV"),
      xlab="", ylab="", axes=FALSE)
 axis.circular(at=ejes_pos, labels=ejes_etiq)
 
-#  Final plot: bedtime and wake-up with mean direction arrow 
-par(mfrow=c(1, 2), mar=c(2, 2, 2, 2))
+# BANDWIDTH COMPARISON FOR WAKE-UP TIME 
 
-plot(kern.den.circ(acostarse_circ, bw="rt"),
-     plot.type="circle", shrink=2,
-     main="", points.plot=FALSE,
-     xlab="", ylab="", axes=FALSE)
-axis.circular(at=ejes_pos, labels=ejes_etiq)
-arrows.circular(mean(acostarse_circ), col="red", length=0.1)
+# 1. Set up the 2x2 grid layout and margins
+par(mfrow=c(2, 2), mar=c(2, 2, 3, 2))
 
+# 2. Quadrant 1: Rule of Thumb (RT)
 plot(kern.den.circ(despertar_circ, bw="rt"),
      plot.type="circle", shrink=2,
-     main="", points.plot=FALSE,
+     main=" RT", points.plot=FALSE,
      xlab="", ylab="", axes=FALSE)
 axis.circular(at=ejes_pos, labels=ejes_etiq)
-arrows.circular(mean(despertar_circ), col="red", length=0.1)
+
+# 3. Quadrant 2: Direct Plug-In (DPI)
+plot(kern.den.circ(despertar_circ, bw="dpi"),
+     plot.type="circle", shrink=2,
+     main="DPI", points.plot=FALSE,
+     xlab="", ylab="", axes=FALSE)
+axis.circular(at=ejes_pos, labels=ejes_etiq)
+
+# 4. Quadrant 3: Solve-The-Equation (STE)
+plot(kern.den.circ(despertar_circ, bw="AA"),
+     plot.type="circle", shrink=2,
+     main="STE", points.plot=FALSE,
+     xlab="", ylab="", axes=FALSE)
+axis.circular(at=ejes_pos, labels=ejes_etiq)
+
+# 5. Quadrant 4: Likelihood Cross-Validation (LCV)
+plot(kern.den.circ(despertar_circ, bw="CV"),
+     plot.type="circle", shrink=2,
+     main=" LCV", points.plot=FALSE,
+     xlab="", ylab="", axes=FALSE)
+axis.circular(at=ejes_pos, labels=ejes_etiq)
 
 # EUCLIDEAN KDE
 
@@ -267,17 +283,36 @@ est_ll_panas  <- kern.reg.circ.lin(bedtime_reg, panas,  bw=bw_reg, method="LL")
 
 # line plot: NW vs LL
 par(mfrow=c(1, 2))
-plot(est_nw_estres, plot.type="line", points.plot=TRUE,
-     xlab="Bedtime", ylab="Daily Stress",
-     main="", xlim=c(0, 1))
-lines(est_ll_estres, plot.type="line", line.col=2)
-legend("topright", legend=c("NW", "LL"), col=c(1, 2), lty=1, bty="n")
 
-plot(est_nw_panas, plot.type="line", points.plot=TRUE,
+# 1. Align the domain
+grid_x <- as.numeric(est_nw_estres$x) - 2*pi
+
+# 2.cut the lines exactly at the min and max data points (removes the unstable tails)
+valid_idx <- grid_x >= min(datos_reg$rad_acostarse) & grid_x <= max(datos_reg$rad_acostarse)
+
+# Plot 1: Daily stress (NW vs LL)
+plot(as.numeric(datos_reg$rad_acostarse), datos_reg$Daily_stress,
+     xlab="Bedtime", ylab="Daily Stress",
+     main="",
+     xlim=c(min(datos_reg$rad_acostarse)-0.1, max(datos_reg$rad_acostarse)+0.1),
+     ylim=c(10, 80), col="gray60", pch=1)
+
+lines(grid_x[valid_idx], est_nw_estres$y[valid_idx], col="black", lwd=2)
+lines(grid_x[valid_idx], est_ll_estres$y[valid_idx], col="red", lwd=2)
+# Moved legend to top-left to avoid overlaps
+legend("topleft", legend=c("NW", "LL"), col=c("black", "red"), lty=1, bty="n")
+
+# Plot 2: PANAS Positive (NW vs LL)
+plot(as.numeric(datos_reg$rad_acostarse), datos_reg$panas_pos,
      xlab="Bedtime", ylab="PANAS Positive",
-     main="", xlim=c(0, 1))
-lines(est_ll_panas, plot.type="line", line.col=2)
-legend("topright", legend=c("NW", "LL"), col=c(1, 2), lty=1, bty="n")
+     main="",
+     xlim=c(min(datos_reg$rad_acostarse)-0.1, max(datos_reg$rad_acostarse)+0.1),
+     ylim=c(70, 170), col="gray60", pch=1)
+
+lines(grid_x[valid_idx], est_nw_panas$y[valid_idx], col="black", lwd=2)
+lines(grid_x[valid_idx], est_ll_panas$y[valid_idx], col="red", lwd=2)
+# Moved legend to top-left to avoid overlaps
+legend("topleft", legend=c("NW", "LL"), col=c("black", "red"), lty=1, bty="n")
 
 # circle plot: NW estimator (Watson-style)
 {
